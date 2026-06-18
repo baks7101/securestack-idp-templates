@@ -1,0 +1,83 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: php-service-golden-path
+  title: New PHP Service (Secure Golden Path)
+  description: Scaffolds a new PHP service with a secure CI pipeline (Gitleaks, PHPStan, Trivy) and Kubernetes-ready setup, all baked in by default.
+  tags:
+    - php
+    - security
+    - recommended
+spec:
+  owner: baks7101
+  type: service
+
+  # The form the developer fills in.
+  parameters:
+    - title: Service details
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Service name
+          type: string
+          description: Unique name for the new service (lowercase, hyphens allowed).
+          pattern: '^[a-z0-9-]+$'
+        description:
+          title: Description
+          type: string
+          description: What does this service do?
+        owner:
+          title: Owner
+          type: string
+          description: Who owns this service?
+          default: baks7101
+    - title: Repository location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  # The steps that build the service.
+  steps:
+    - id: fetch
+      name: Fetch skeleton and apply values
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+
+    - id: register
+      name: Register in catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  # What the developer sees when it's done.
+  output:
+    links:
+      - title: Open the new repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: View in catalog
+        entityRef: ${{ steps.register.output.entityRef }}
