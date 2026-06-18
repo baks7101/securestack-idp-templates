@@ -36,15 +36,13 @@ spec:
           default: baks7101
     - title: Repository location
       required:
-        - repoUrl
+        - repoName
       properties:
-        repoUrl:
-          title: Repository location
+        repoName:
+          title: Repository name
           type: string
-          ui:field: RepoUrlPicker
-          ui:options:
-            allowedHosts:
-              - github.com
+          description: Name for the new GitHub repository.
+          default: my-php-service
 
   # The steps that build the service.
   steps:
@@ -57,13 +55,15 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+          destination:
+            owner: baks7101
+            repo: ${{ parameters.repoName }}
 
     - id: publish
       name: Publish to GitHub
       action: publish:github
       input:
-        repoUrl: ${{ parameters.repoUrl }}
+        repoUrl: github.com?owner=baks7101&repo=${{ parameters.repoName }}
         description: ${{ parameters.description }}
         defaultBranch: main
 
